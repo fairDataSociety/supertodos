@@ -1,5 +1,8 @@
 # supertodos
 
+![vue](https://user-images.githubusercontent.com/1248071/182042801-946aed31-68e2-4524-89cc-799f6d7bc542.png)
+
+
 ## Project setup
 ```
 npm install
