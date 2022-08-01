@@ -19,13 +19,18 @@
             </template>
             <v-card>
               <v-card-title>
+                <v-progress-circular
+                  indeterminate
+                  v-show="loginProgress"
+                  color="primary"
+                ></v-progress-circular>
                 <span class="text-h5">Login to fairdrive</span>
               </v-card-title>
 
               <v-card-text>
                 <v-container>
                   <v-row>
-                    <v-col cols="12" sm="6" md="4">
+                    <v-col cols="12">
                       <v-text-field
                         v-model="credentials.username"
                         label="Username"
@@ -33,13 +38,13 @@
                     </v-col>
                   </v-row>
                   <v-row>
-                    <v-col cols="12" sm="6" md="4">
+                    <v-col cols="12">
                       <v-text-field
                         v-model="credentials.password"
                         :append-icon="show1 ? 'mdi-eye' : 'mdi-eye-off'"
                         :type="show1 ? 'text' : 'password'"
                         name="input-10-1"
-                        label="Normal with hint text"
+                        label="Password"
                         hint="At least 8 characters"
                         counter
                         @click:append="show1 = !show1"
@@ -50,7 +55,6 @@
               </v-card-text>
 
               <v-card-actions>
-                <v-spacer></v-spacer>
                 <v-btn color="blue darken-1" text @click="close">
                   Cancel
                 </v-btn>
@@ -60,6 +64,11 @@
           </v-dialog>
           <v-dialog v-model="addDialog" max-width="500px">
             <template v-slot:activator="{ on, attrs }">
+              <v-progress-circular
+                indeterminate
+                v-show="addProgress"
+                color="primary"
+              ></v-progress-circular>
               <v-btn color="primary" dark class="m-2" v-bind="attrs" v-on="on">
                 New Todo
               </v-btn>
@@ -183,6 +192,7 @@ export default class App extends Vue {
     label: "",
     id: "",
   };
+  loginProgress = false;
   fdp: FdpStorage;
   wallet: any;
   podCounter: number;
@@ -191,7 +201,7 @@ export default class App extends Vue {
   created() {
     this.initialize();
   }
-  initialize() {
+  async initialize() {
     // this.todos = [
     //   {
     //     key: "1",
@@ -199,8 +209,28 @@ export default class App extends Vue {
     //     id: "1",
     //   },
     // ];
+    const rpcUrl = `https://goerli.infura.io/v3/92ed13edfad140409ac24457a9c4e22d`;
 
-    this.fdp = new FdpStorage("http://localhost:1633", "http://localhost:1635");
+    const publicResolver = `0x200C9d891F5b480D6210a252539c473e3Ae4771a`;
+    const ensRegistry = `0xE687f17858382C6FCbAe02b31B0aAB607D396059`;
+    const fdsRegistrar = `0x3adfB0D6B9662c9F711c2Ab18Cf5D7B0cc369C6B`;
+
+    this.fdp = new FdpStorage(
+      "http://localhost:1633",
+      "http://localhost:1635",
+      {
+        ensOptions: {
+          performChecks: true,
+          rpcUrl,
+          contractAddresses: {
+            ensRegistry,
+            publicResolver,
+            fdsRegistrar,
+          },
+        },
+        ensDomain: "fds",
+      }
+    );
   }
 
   async loadItems() {
@@ -209,10 +239,10 @@ export default class App extends Vue {
       `/${TODOS_PATH}`
     );
 
-    for (const i in items) {
+    for (const i in items.content) {
       const data = await this.fdp.file.downloadData(
         TODOS_NAMESPACE,
-        `/${TODOS_PATH}/${i}`
+        `/${TODOS_PATH}/${(i as any).name}`
       );
       const obj = JSON.parse(data.text());
       this.todos.push(obj);
@@ -270,6 +300,7 @@ export default class App extends Vue {
 
   async login() {
     try {
+      this.loginProgress = true;
       const res = await this.fdp.account.login(
         this.credentials.username,
         this.credentials.password
@@ -279,25 +310,25 @@ export default class App extends Vue {
       // check if there is any pod, else create a new one
 
       let pods = await this.fdp.personalStorage.list();
-
-      if (pods.length > 0) {
-        // set counter somewhere
-        this.podCounter = pods.length;
-        this.todoPod = pods[0];
-        await this.loadItems();
-      } else {
-        const todoPod = await this.fdp.personalStorage.create(TODOS_NAMESPACE);
-        const res = await this.fdp.directory.create(
-          TODOS_NAMESPACE,
-          TODOS_PATH
-        );
-        pods = await this.fdp.personalStorage.list();
-        this.podCounter = pods.length;
-        this.todoPod = todoPod;
+      if (pods.length < 1) {
+        await this.fdp.personalStorage.create(TODOS_NAMESPACE);
       }
+
+      const exists = await this.fdp.directory.read(
+        TODOS_NAMESPACE,
+        `/${TODOS_PATH}`
+      );
+
+      if (!exists) {
+        await this.fdp.directory.create(TODOS_NAMESPACE, `/${TODOS_PATH}`);
+      }
+
+      await this.loadItems();
     } catch (e) {
       alert(e.message);
     }
+    this.loginProgress = false;
+    this.loginDialog = false;
   }
 }
 </script>
