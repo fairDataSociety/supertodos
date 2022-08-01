@@ -11,9 +11,9 @@
           <v-toolbar-title>fairdrive todos</v-toolbar-title>
           <v-divider class="mx-4" inset vertical></v-divider>
           <v-spacer></v-spacer>
-          <v-dialog v-model="dialog" max-width="500px">
+          <v-dialog v-model="loginDialog" max-width="500px">
             <template v-slot:activator="{ on, attrs }">
-              <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on">
+              <v-btn color="primary" dark class="m-2" v-bind="attrs" v-on="on">
                 Login
               </v-btn>
             </template>
@@ -54,13 +54,13 @@
                 <v-btn color="blue darken-1" text @click="close">
                   Cancel
                 </v-btn>
-                <v-btn color="blue darken-1" text @click="save"> Save </v-btn>
+                <v-btn color="blue darken-1" text @click="login"> Login </v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
-          <v-dialog v-model="dialog" max-width="500px">
+          <v-dialog v-model="addDialog" max-width="500px">
             <template v-slot:activator="{ on, attrs }">
-              <v-btn color="primary" dark class="mb-2" v-bind="attrs" v-on="on">
+              <v-btn color="primary" dark class="m-2" v-bind="attrs" v-on="on">
                 New Todo
               </v-btn>
             </template>
@@ -123,12 +123,17 @@
 </template>
 <script lang="ts">
 import { Component, Vue } from "vue-property-decorator";
+import { FdpStorage } from "@fairdatasociety/fdp-storage";
+import { v4 as uuidv4 } from "uuid";
 
 export interface TodoItem {
   key: string;
   label: string;
   id: string;
 }
+
+const TODOS_NAMESPACE = "todos";
+const TODOS_PATH = "items";
 
 @Component({
   components: {},
@@ -148,8 +153,10 @@ export interface TodoItem {
   },
 })
 export default class App extends Vue {
-  dialog = false;
+  loginDialog = false;
+  addDialog = false;
   show1 = false;
+
   dialogDelete = false;
   credentials = {
     username: "",
@@ -176,27 +183,50 @@ export default class App extends Vue {
     label: "",
     id: "",
   };
+  fdp: FdpStorage;
+  wallet: any;
+  podCounter: number;
+  todoPod: any;
 
   created() {
     this.initialize();
   }
   initialize() {
-    this.todos = [
-      {
-        key: "1",
-        label: "default todo item",
-        id: "1",
-      },
-    ];
+    // this.todos = [
+    //   {
+    //     key: "1",
+    //     label: "default todo item",
+    //     id: "1",
+    //   },
+    // ];
+
+    this.fdp = new FdpStorage("http://localhost:1633", "http://localhost:1635");
+  }
+
+  async loadItems() {
+    const items = await this.fdp.directory.read(
+      TODOS_NAMESPACE,
+      `/${TODOS_PATH}`
+    );
+
+    for (const i in items) {
+      const data = await this.fdp.file.downloadData(
+        TODOS_NAMESPACE,
+        `/${TODOS_PATH}/${i}`
+      );
+      const obj = JSON.parse(data.text());
+      this.todos.push(obj);
+    }
   }
 
   editItem(item: TodoItem) {
     this.editedIndex = this.todos.indexOf(item);
     this.editedItem = Object.assign({}, item);
-    this.dialog = true;
+    this.addDialog = true;
   }
 
-  deleteItem(item: TodoItem) {
+  async deleteItem(item: TodoItem) {
+    await this.fdp.file.delete(TODOS_NAMESPACE, `/${TODOS_PATH}/${item.id}`);
     this.editedIndex = this.todos.indexOf(item);
     this.editedItem = Object.assign({}, item);
     this.dialogDelete = true;
@@ -208,7 +238,7 @@ export default class App extends Vue {
   }
 
   close() {
-    this.dialog = false;
+    this.loginDialog = this.addDialog = false;
     this.$nextTick(() => {
       this.editedItem = Object.assign({}, this.defaultItem);
       this.editedIndex = -1;
@@ -223,13 +253,51 @@ export default class App extends Vue {
     });
   }
 
-  save() {
+  async save() {
     if (this.editedIndex > -1) {
       Object.assign(this.todos[this.editedIndex], this.editedItem);
     } else {
       this.todos.push(this.editedItem);
     }
+    const id = uuidv4();
+    await this.fdp.file.uploadData(
+      TODOS_NAMESPACE,
+      `/${TODOS_PATH}/${id}`,
+      JSON.stringify({ todo: this.editedItem.label, id })
+    );
     this.close();
+  }
+
+  async login() {
+    try {
+      const res = await this.fdp.account.login(
+        this.credentials.username,
+        this.credentials.password
+      );
+      this.wallet = res;
+
+      // check if there is any pod, else create a new one
+
+      let pods = await this.fdp.personalStorage.list();
+
+      if (pods.length > 0) {
+        // set counter somewhere
+        this.podCounter = pods.length;
+        this.todoPod = pods[0];
+        await this.loadItems();
+      } else {
+        const todoPod = await this.fdp.personalStorage.create(TODOS_NAMESPACE);
+        const res = await this.fdp.directory.create(
+          TODOS_NAMESPACE,
+          TODOS_PATH
+        );
+        pods = await this.fdp.personalStorage.list();
+        this.podCounter = pods.length;
+        this.todoPod = todoPod;
+      }
+    } catch (e) {
+      alert(e.message);
+    }
   }
 }
 </script>
