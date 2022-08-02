@@ -170,7 +170,7 @@ export interface TodoItem {
   id: string;
 }
 
-const TODOS_NAMESPACE = "__todos";
+const TODOS_NAMESPACE = "_todos";
 const TODOS_PATH = "items";
 
 @Component({
@@ -232,13 +232,7 @@ export default class App extends Vue {
     this.initialize();
   }
   async initialize() {
-    // this.todos = [
-    //   {
-    //     key: "1",
-    //     label: "default todo item",
-    //     id: "1",
-    //   },
-    // ];
+    this.todos = [];
     const rpcUrl = `https://goerli.infura.io/v3/92ed13edfad140409ac24457a9c4e22d`;
 
     const publicResolver = `0x200C9d891F5b480D6210a252539c473e3Ae4771a`;
@@ -264,22 +258,26 @@ export default class App extends Vue {
   }
 
   async loadItems() {
-    this.todos = [];
     const items = await this.fdp.directory.read(
       TODOS_NAMESPACE,
       `/${TODOS_PATH}`
     );
 
     for (const i in items.content) {
-      const data = await this.fdp.file.downloadData(
-        TODOS_NAMESPACE,
-        `/${TODOS_PATH}/${(i as any).name}`
-      );
-      // eslint-disable-next-line no-debugger
-      debugger;
-      const obj = JSON.parse(data.text());
-      this.todos.push(obj);
+      if (!this.todos.find((t) => t.id === i.split(`.`)[1])) {
+        const data = await this.fdp.file.downloadData(
+          TODOS_NAMESPACE,
+          `/${TODOS_PATH}/${(i as any).name}`
+        );
+        // eslint-disable-next-line no-debugger
+        debugger;
+        const payload = new TextDecoder().decode(data.buffer);
+        const obj = JSON.parse(payload);
+        this.todos.push(obj);
+      }
     }
+    // eslint-disable-next-line no-debugger
+    debugger;
   }
 
   editItem(item: TodoItem) {
@@ -289,10 +287,12 @@ export default class App extends Vue {
   }
 
   async deleteItem(item: TodoItem) {
+    this.addProgress = true;
     await this.fdp.file.delete(TODOS_NAMESPACE, `/${TODOS_PATH}/${item.id}`);
     this.editedIndex = this.todos.indexOf(item);
     this.editedItem = Object.assign({}, item);
     this.dialogDelete = true;
+    this.addProgress = false;
   }
 
   deleteItemConfirm() {
@@ -324,13 +324,16 @@ export default class App extends Vue {
       this.todos.push(this.editedItem);
     }
     const id = uuidv4();
+    this.close();
+
     await this.fdp.file.uploadData(
       TODOS_NAMESPACE,
       `/${TODOS_PATH}/${id}.json`,
-      JSON.stringify({ todo: this.editedItem.label, id })
+      new TextEncoder().encode(
+        JSON.stringify({ todo: this.editedItem.label, id })
+      )
     );
-    this.addProgress = true;
-    this.close();
+    this.addProgress = false;
   }
 
   async login() {
