@@ -1,133 +1,162 @@
 <template>
   <v-app>
-    <v-data-table
-      :headers="headers"
-      :items="todos"
-      sort-by="key"
-      class="elevation-1"
-    >
-      <template v-slot:top>
-        <v-toolbar flat>
-          <v-toolbar-title>fairdrive todos</v-toolbar-title>
-          <v-divider class="mx-4" inset vertical></v-divider>
-          <v-spacer></v-spacer>
-          <v-dialog v-model="loginDialog" max-width="500px">
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn color="primary" dark class="m-2" v-bind="attrs" v-on="on">
-                Login
-              </v-btn>
-            </template>
-            <v-card>
-              <v-card-title>
-                <v-progress-circular
-                  indeterminate
-                  v-show="loginProgress"
-                  color="primary"
-                ></v-progress-circular>
-                <span class="text-h5">Login to fairdrive</span>
-              </v-card-title>
-
-              <v-card-text>
-                <v-container>
-                  <v-row>
-                    <v-col cols="12">
-                      <v-text-field
-                        v-model="credentials.username"
-                        label="Username"
-                      ></v-text-field>
-                    </v-col>
-                  </v-row>
-                  <v-row>
-                    <v-col cols="12">
-                      <v-text-field
-                        v-model="credentials.password"
-                        :append-icon="show1 ? 'mdi-eye' : 'mdi-eye-off'"
-                        :type="show1 ? 'text' : 'password'"
-                        name="input-10-1"
-                        label="Password"
-                        hint="At least 8 characters"
-                        counter
-                        @click:append="show1 = !show1"
-                      ></v-text-field>
-                    </v-col>
-                  </v-row>
-                </v-container>
-              </v-card-text>
-
-              <v-card-actions>
-                <v-btn color="blue darken-1" text @click="close">
-                  Cancel
-                </v-btn>
-                <v-btn color="blue darken-1" text @click="login"> Login </v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-          <v-dialog v-model="addDialog" max-width="500px">
-            <template v-slot:activator="{ on, attrs }">
-              <v-progress-circular
-                indeterminate
-                v-show="addProgress"
-                color="primary"
-              ></v-progress-circular>
-              <v-btn color="primary" dark class="m-2" v-bind="attrs" v-on="on">
-                New Todo
-              </v-btn>
-            </template>
-            <v-card>
-              <v-card-title>
-                <span class="text-h5">{{ formTitle }}</span>
-              </v-card-title>
-
-              <v-card-text>
-                <v-container>
-                  <v-row>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field
-                        v-model="editedItem.label"
-                        label="Todo text"
-                      ></v-text-field>
-                    </v-col>
-                  </v-row>
-                </v-container>
-              </v-card-text>
-
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="close">
-                  Cancel
-                </v-btn>
-                <v-btn color="blue darken-1" text @click="save"> Save </v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-          <v-dialog v-model="dialogDelete" max-width="500px">
-            <v-card>
-              <v-card-title class="text-h5"
-                >Are you sure you want to delete this item?</v-card-title
-              >
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="closeDelete"
-                  >Cancel</v-btn
+    <v-container>
+      <v-row justify="space-around">
+        <v-card>
+          <v-data-table
+            :headers="headers"
+            :items="todos"
+            sort-by="key"
+            class="elevation-1"
+          >
+            <template v-slot:top>
+              <v-toolbar flat>
+                <v-toolbar-title
+                  ><h2 color="primary">fairdrive todos</h2></v-toolbar-title
                 >
-                <v-btn color="blue darken-1" text @click="deleteItemConfirm"
-                  >OK</v-btn
-                >
+                <v-divider class="mx-4" inset vertical></v-divider>
                 <v-spacer></v-spacer>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-        </v-toolbar>
-      </template>
-      <!-- eslint-disable-next-line vue/valid-v-slot -->
-      <template v-slot:item.actions="{ item }">
-        <v-icon small class="mr-2" @click="editItem(item)"> mdi-pencil </v-icon>
-        <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
-      </template>
-      <template v-slot:no-data>
-        <v-btn color="primary" @click="initialize"> Reset </v-btn>
-      </template>
-    </v-data-table>
+                <v-btn color="primary" dark class="m-2" icon @click="loadItems">
+                  <v-icon>mdi-refresh</v-icon>
+                </v-btn>
+                <v-dialog v-model="loginDialog" max-width="500px">
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-btn
+                      color="primary"
+                      dark
+                      class="m-2"
+                      v-bind="attrs"
+                      v-on="on"
+                      icon
+                    >
+                      <v-icon>mdi-login</v-icon>
+                    </v-btn>
+                  </template>
+                  <v-card>
+                    <v-card-title>
+                      <v-progress-circular
+                        indeterminate
+                        v-show="loginProgress"
+                        color="primary"
+                      ></v-progress-circular>
+                      <span class="text-h5">Login to fairdrive</span>
+                    </v-card-title>
+
+                    <v-card-text>
+                      <v-container>
+                        <v-row>
+                          <v-col cols="12">
+                            <v-text-field
+                              v-model="credentials.username"
+                              label="Username"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                        <v-row>
+                          <v-col cols="12">
+                            <v-text-field
+                              v-model="credentials.password"
+                              :append-icon="show1 ? 'mdi-eye' : 'mdi-eye-off'"
+                              :type="show1 ? 'text' : 'password'"
+                              name="input-10-1"
+                              label="Password"
+                              hint="At least 8 characters"
+                              counter
+                              @click:append="show1 = !show1"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                      </v-container>
+                    </v-card-text>
+
+                    <v-card-actions>
+                      <v-btn color="blue darken-1" text @click="close">
+                        Cancel
+                      </v-btn>
+                      <v-btn color="blue darken-1" text @click="login">
+                        Login
+                      </v-btn>
+                    </v-card-actions>
+                  </v-card>
+                </v-dialog>
+                <v-dialog v-model="addDialog" max-width="500px">
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-progress-circular
+                      indeterminate
+                      v-show="addProgress"
+                      color="primary"
+                    ></v-progress-circular>
+                    <v-btn
+                      icon
+                      color="primary"
+                      dark
+                      class="m-2"
+                      v-bind="attrs"
+                      v-on="on"
+                    >
+                      <v-icon>mdi-plus</v-icon>
+                    </v-btn>
+                  </template>
+                  <v-card>
+                    <v-card-title>
+                      <span class="text-h5">{{ formTitle }}</span>
+                    </v-card-title>
+
+                    <v-card-text>
+                      <v-container>
+                        <v-row>
+                          <v-col cols="12" sm="6" md="4">
+                            <v-text-field
+                              v-model="editedItem.label"
+                              label="Todo text"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                      </v-container>
+                    </v-card-text>
+
+                    <v-card-actions>
+                      <v-spacer></v-spacer>
+                      <v-btn color="blue darken-1" text @click="close">
+                        Cancel
+                      </v-btn>
+                      <v-btn color="blue darken-1" text @click="save">
+                        Save
+                      </v-btn>
+                    </v-card-actions>
+                  </v-card>
+                </v-dialog>
+                <v-dialog v-model="dialogDelete" max-width="500px">
+                  <v-card>
+                    <v-card-title class="text-h5"
+                      >Are you sure you want to delete this item?</v-card-title
+                    >
+                    <v-card-actions>
+                      <v-spacer></v-spacer>
+                      <v-btn color="blue darken-1" text @click="closeDelete"
+                        >Cancel</v-btn
+                      >
+                      <v-btn
+                        color="blue darken-1"
+                        text
+                        @click="deleteItemConfirm"
+                        >OK</v-btn
+                      >
+                      <v-spacer></v-spacer>
+                    </v-card-actions>
+                  </v-card>
+                </v-dialog>
+              </v-toolbar>
+            </template>
+            <!-- eslint-disable-next-line vue/valid-v-slot -->
+            <template v-slot:item.actions="{ item }">
+              <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
+            </template>
+            <template v-slot:no-data> No todos found </template>
+          </v-data-table>
+        </v-card>
+      </v-row>
+    </v-container>
   </v-app>
 </template>
 <script lang="ts">
@@ -141,7 +170,7 @@ export interface TodoItem {
   id: string;
 }
 
-const TODOS_NAMESPACE = "todos";
+const TODOS_NAMESPACE = "__todos";
 const TODOS_PATH = "items";
 
 @Component({
@@ -193,6 +222,7 @@ export default class App extends Vue {
     id: "",
   };
   loginProgress = false;
+  addProgress = false;
   fdp: FdpStorage;
   wallet: any;
   podCounter: number;
@@ -234,6 +264,7 @@ export default class App extends Vue {
   }
 
   async loadItems() {
+    this.todos = [];
     const items = await this.fdp.directory.read(
       TODOS_NAMESPACE,
       `/${TODOS_PATH}`
@@ -244,6 +275,8 @@ export default class App extends Vue {
         TODOS_NAMESPACE,
         `/${TODOS_PATH}/${(i as any).name}`
       );
+      // eslint-disable-next-line no-debugger
+      debugger;
       const obj = JSON.parse(data.text());
       this.todos.push(obj);
     }
@@ -284,6 +317,7 @@ export default class App extends Vue {
   }
 
   async save() {
+    this.addProgress = true;
     if (this.editedIndex > -1) {
       Object.assign(this.todos[this.editedIndex], this.editedItem);
     } else {
@@ -292,9 +326,10 @@ export default class App extends Vue {
     const id = uuidv4();
     await this.fdp.file.uploadData(
       TODOS_NAMESPACE,
-      `/${TODOS_PATH}/${id}`,
+      `/${TODOS_PATH}/${id}.json`,
       JSON.stringify({ todo: this.editedItem.label, id })
     );
+    this.addProgress = true;
     this.close();
   }
 
@@ -310,16 +345,13 @@ export default class App extends Vue {
       // check if there is any pod, else create a new one
 
       let pods = await this.fdp.personalStorage.list();
-      if (pods.length < 1) {
+      if (!pods.find((i) => i.name === TODOS_NAMESPACE)) {
         await this.fdp.personalStorage.create(TODOS_NAMESPACE);
       }
 
-      const exists = await this.fdp.directory.read(
-        TODOS_NAMESPACE,
-        `/${TODOS_PATH}`
-      );
-
-      if (!exists) {
+      try {
+        await this.fdp.directory.read(TODOS_NAMESPACE, `/${TODOS_PATH}`);
+      } catch (e) {
         await this.fdp.directory.create(TODOS_NAMESPACE, `/${TODOS_PATH}`);
       }
 
