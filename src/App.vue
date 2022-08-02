@@ -1,160 +1,173 @@
 <template>
   <v-app>
     <v-container>
-      <v-row justify="space-around">
-        <v-card>
-          <v-data-table
-            :headers="headers"
-            :items="todos"
-            sort-by="key"
-            class="elevation-1"
-          >
-            <template v-slot:top>
-              <v-toolbar flat>
-                <v-toolbar-title
-                  ><h2 color="primary">fairdrive todos</h2></v-toolbar-title
-                >
-                <v-divider class="mx-4" inset vertical></v-divider>
-                <v-spacer></v-spacer>
-                <v-btn color="primary" dark class="m-2" icon @click="loadItems">
-                  <v-icon>mdi-refresh</v-icon>
+      <v-row>
+        <v-col><h2 color="primary">supertodos by fairdrive</h2></v-col></v-row
+      >
+      <v-row v-show="!isLoggedIn">
+        <v-col>
+          <v-dialog v-model="loginDialog" max-width="500px">
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                color="pink"
+                dark
+                large
+                class="m-2"
+                v-bind="attrs"
+                v-on="on"
+                icon
+              >
+                <v-icon>mdi-login</v-icon>
+              </v-btn>
+            </template>
+            <v-card>
+              <v-card-title>
+                <v-progress-circular
+                  indeterminate
+                  v-show="loginProgress"
+                  color="primary"
+                ></v-progress-circular>
+                <span class="text-h5">Login to fairdrive</span>
+              </v-card-title>
+
+              <v-card-text>
+                <v-container>
+                  <v-row>
+                    <v-col cols="12">
+                      <v-text-field
+                        v-model="credentials.username"
+                        label="Username"
+                      ></v-text-field>
+                    </v-col>
+                  </v-row>
+                  <v-row>
+                    <v-col cols="12">
+                      <v-text-field
+                        v-model="credentials.password"
+                        :append-icon="show1 ? 'mdi-eye' : 'mdi-eye-off'"
+                        :type="show1 ? 'text' : 'password'"
+                        name="input-10-1"
+                        label="Password"
+                        hint="At least 8 characters"
+                        counter
+                        @click:append="show1 = !show1"
+                      ></v-text-field>
+                    </v-col>
+                  </v-row>
+                </v-container>
+              </v-card-text>
+
+              <v-card-actions>
+                <v-btn color="blue darken-1" text @click="close">
+                  Cancel
                 </v-btn>
-                <v-dialog v-model="loginDialog" max-width="500px">
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-btn
-                      color="primary"
-                      dark
-                      class="m-2"
-                      v-bind="attrs"
-                      v-on="on"
-                      icon
-                    >
-                      <v-icon>mdi-login</v-icon>
-                    </v-btn>
-                  </template>
-                  <v-card>
-                    <v-card-title>
+                <v-btn color="blue darken-1" text @click="login"> Login </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+        </v-col></v-row
+      >
+      <v-row justify="space-around">
+        <v-col>
+          <v-card v-show="isLoggedIn">
+            <v-card-title> </v-card-title>
+            <v-data-table
+              :headers="headers"
+              :items="todos"
+              sort-by="key"
+              class="elevation-1"
+            >
+              <template v-slot:top>
+                <v-toolbar flat>
+                  <v-divider class="mx-4" inset vertical></v-divider>
+                  <v-spacer></v-spacer>
+                  <v-btn
+                    color="primary"
+                    dark
+                    class="m-2"
+                    icon
+                    @click="loadItems"
+                  >
+                    <v-icon>mdi-refresh</v-icon>
+                  </v-btn>
+                  <v-dialog v-model="addDialog" max-width="500px">
+                    <template v-slot:activator="{ on, attrs }">
                       <v-progress-circular
                         indeterminate
-                        v-show="loginProgress"
+                        v-show="addProgress"
                         color="primary"
                       ></v-progress-circular>
-                      <span class="text-h5">Login to fairdrive</span>
-                    </v-card-title>
-
-                    <v-card-text>
-                      <v-container>
-                        <v-row>
-                          <v-col cols="12">
-                            <v-text-field
-                              v-model="credentials.username"
-                              label="Username"
-                            ></v-text-field>
-                          </v-col>
-                        </v-row>
-                        <v-row>
-                          <v-col cols="12">
-                            <v-text-field
-                              v-model="credentials.password"
-                              :append-icon="show1 ? 'mdi-eye' : 'mdi-eye-off'"
-                              :type="show1 ? 'text' : 'password'"
-                              name="input-10-1"
-                              label="Password"
-                              hint="At least 8 characters"
-                              counter
-                              @click:append="show1 = !show1"
-                            ></v-text-field>
-                          </v-col>
-                        </v-row>
-                      </v-container>
-                    </v-card-text>
-
-                    <v-card-actions>
-                      <v-btn color="blue darken-1" text @click="close">
-                        Cancel
-                      </v-btn>
-                      <v-btn color="blue darken-1" text @click="login">
-                        Login
-                      </v-btn>
-                    </v-card-actions>
-                  </v-card>
-                </v-dialog>
-                <v-dialog v-model="addDialog" max-width="500px">
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-progress-circular
-                      indeterminate
-                      v-show="addProgress"
-                      color="primary"
-                    ></v-progress-circular>
-                    <v-btn
-                      icon
-                      color="primary"
-                      dark
-                      class="m-2"
-                      v-bind="attrs"
-                      v-on="on"
-                    >
-                      <v-icon>mdi-plus</v-icon>
-                    </v-btn>
-                  </template>
-                  <v-card>
-                    <v-card-title>
-                      <span class="text-h5">{{ formTitle }}</span>
-                    </v-card-title>
-
-                    <v-card-text>
-                      <v-container>
-                        <v-row>
-                          <v-col cols="12" sm="6" md="4">
-                            <v-text-field
-                              v-model="editedItem.label"
-                              label="Todo text"
-                            ></v-text-field>
-                          </v-col>
-                        </v-row>
-                      </v-container>
-                    </v-card-text>
-
-                    <v-card-actions>
-                      <v-spacer></v-spacer>
-                      <v-btn color="blue darken-1" text @click="close">
-                        Cancel
-                      </v-btn>
-                      <v-btn color="blue darken-1" text @click="save">
-                        Save
-                      </v-btn>
-                    </v-card-actions>
-                  </v-card>
-                </v-dialog>
-                <v-dialog v-model="dialogDelete" max-width="500px">
-                  <v-card>
-                    <v-card-title class="text-h5"
-                      >Are you sure you want to delete this item?</v-card-title
-                    >
-                    <v-card-actions>
-                      <v-spacer></v-spacer>
-                      <v-btn color="blue darken-1" text @click="closeDelete"
-                        >Cancel</v-btn
-                      >
                       <v-btn
-                        color="blue darken-1"
-                        text
-                        @click="deleteItemConfirm"
-                        >OK</v-btn
+                        icon
+                        color="primary"
+                        dark
+                        class="m-2"
+                        v-bind="attrs"
+                        v-on="on"
                       >
-                      <v-spacer></v-spacer>
-                    </v-card-actions>
-                  </v-card>
-                </v-dialog>
-              </v-toolbar>
-            </template>
-            <!-- eslint-disable-next-line vue/valid-v-slot -->
-            <template v-slot:item.actions="{ item }">
-              <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
-            </template>
-            <template v-slot:no-data> No todos found </template>
-          </v-data-table>
-        </v-card>
+                        <v-icon>mdi-plus</v-icon>
+                      </v-btn>
+                    </template>
+                    <v-card>
+                      <v-card-title>
+                        <span class="text-h5">{{ formTitle }}</span>
+                      </v-card-title>
+
+                      <v-card-text>
+                        <v-container>
+                          <v-row>
+                            <v-col cols="12" sm="6" md="4">
+                              <v-text-field
+                                v-model="editedItem.label"
+                                label="Todo text"
+                              ></v-text-field>
+                            </v-col>
+                          </v-row>
+                        </v-container>
+                      </v-card-text>
+
+                      <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="blue darken-1" text @click="close">
+                          Cancel
+                        </v-btn>
+                        <v-btn color="blue darken-1" text @click="save">
+                          Save
+                        </v-btn>
+                      </v-card-actions>
+                    </v-card>
+                  </v-dialog>
+                  <v-dialog v-model="dialogDelete" max-width="500px">
+                    <v-card>
+                      <v-card-title class="text-h5"
+                        >Are you sure you want to delete this
+                        item?</v-card-title
+                      >
+                      <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="blue darken-1" text @click="closeDelete"
+                          >Cancel</v-btn
+                        >
+                        <v-btn
+                          color="blue darken-1"
+                          text
+                          @click="deleteItemConfirm"
+                          >OK</v-btn
+                        >
+                        <v-spacer></v-spacer>
+                      </v-card-actions>
+                    </v-card>
+                  </v-dialog>
+                </v-toolbar>
+              </template>
+              <!-- eslint-disable-next-line vue/valid-v-slot -->
+              <template v-slot:item.actions="{ item }">
+                <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
+              </template>
+              <template v-slot:no-data> No todos found </template>
+            </v-data-table>
+          </v-card>
+        </v-col>
       </v-row>
     </v-container>
   </v-app>
@@ -194,7 +207,7 @@ export default class App extends Vue {
   loginDialog = false;
   addDialog = false;
   show1 = false;
-
+  isLoggedIn = false;
   dialogDelete = false;
   credentials = {
     username: "",
@@ -288,7 +301,10 @@ export default class App extends Vue {
 
   async deleteItem(item: TodoItem) {
     this.addProgress = true;
-    await this.fdp.file.delete(TODOS_NAMESPACE, `/${TODOS_PATH}/${item.id}`);
+    await this.fdp.file.delete(
+      TODOS_NAMESPACE,
+      `/${TODOS_PATH}/${item.id}.json`
+    );
     this.editedIndex = this.todos.indexOf(item);
     this.editedItem = Object.assign({}, item);
     this.dialogDelete = true;
@@ -364,6 +380,7 @@ export default class App extends Vue {
     }
     this.loginProgress = false;
     this.loginDialog = false;
+    this.isLoggedIn = true;
   }
 }
 </script>
