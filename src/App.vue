@@ -1,31 +1,39 @@
 <template>
   <v-app>
-    <v-data-table
-      :headers="headers"
-      :items="todos"
-      sort-by="key"
-      class="elevation-1"
-    >
-      <template v-slot:top>
-        <v-toolbar flat>
-          <v-toolbar-title>fairdrive todos</v-toolbar-title>
-          <v-divider class="mx-4" inset vertical></v-divider>
-          <v-spacer></v-spacer>
+    <v-container>
+      <v-row>
+        <v-col><h2 color="primary">supertodos by fairdrive</h2></v-col></v-row
+      >
+      <v-row v-show="!isLoggedIn">
+        <v-col>
           <v-dialog v-model="loginDialog" max-width="500px">
             <template v-slot:activator="{ on, attrs }">
-              <v-btn color="primary" dark class="m-2" v-bind="attrs" v-on="on">
-                Login
+              <v-btn
+                color="pink"
+                dark
+                large
+                class="m-2"
+                v-bind="attrs"
+                v-on="on"
+                icon
+              >
+                <v-icon>mdi-login</v-icon>
               </v-btn>
             </template>
             <v-card>
               <v-card-title>
+                <v-progress-circular
+                  indeterminate
+                  v-show="loginProgress"
+                  color="primary"
+                ></v-progress-circular>
                 <span class="text-h5">Login to fairdrive</span>
               </v-card-title>
 
               <v-card-text>
                 <v-container>
                   <v-row>
-                    <v-col cols="12" sm="6" md="4">
+                    <v-col cols="12">
                       <v-text-field
                         v-model="credentials.username"
                         label="Username"
@@ -33,13 +41,13 @@
                     </v-col>
                   </v-row>
                   <v-row>
-                    <v-col cols="12" sm="6" md="4">
+                    <v-col cols="12">
                       <v-text-field
                         v-model="credentials.password"
                         :append-icon="show1 ? 'mdi-eye' : 'mdi-eye-off'"
                         :type="show1 ? 'text' : 'password'"
                         name="input-10-1"
-                        label="Normal with hint text"
+                        label="Password"
                         hint="At least 8 characters"
                         counter
                         @click:append="show1 = !show1"
@@ -50,7 +58,6 @@
               </v-card-text>
 
               <v-card-actions>
-                <v-spacer></v-spacer>
                 <v-btn color="blue darken-1" text @click="close">
                   Cancel
                 </v-btn>
@@ -58,67 +65,111 @@
               </v-card-actions>
             </v-card>
           </v-dialog>
-          <v-dialog v-model="addDialog" max-width="500px">
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn color="primary" dark class="m-2" v-bind="attrs" v-on="on">
-                New Todo
-              </v-btn>
-            </template>
-            <v-card>
-              <v-card-title>
-                <span class="text-h5">{{ formTitle }}</span>
-              </v-card-title>
+        </v-col></v-row
+      >
+      <v-row justify="space-around">
+        <v-col>
+          <v-card v-show="isLoggedIn">
+            <v-card-title> </v-card-title>
+            <v-data-table
+              :headers="headers"
+              :items="todos"
+              sort-by="key"
+              class="elevation-1"
+            >
+              <template v-slot:top>
+                <v-toolbar flat>
+                  <v-divider class="mx-4" inset vertical></v-divider>
+                  <v-spacer></v-spacer>
+                  <v-btn
+                    color="primary"
+                    dark
+                    class="m-2"
+                    icon
+                    @click="loadItems"
+                  >
+                    <v-icon>mdi-refresh</v-icon>
+                  </v-btn>
+                  <v-dialog v-model="addDialog" max-width="500px">
+                    <template v-slot:activator="{ on, attrs }">
+                      <v-progress-circular
+                        indeterminate
+                        v-show="addProgress"
+                        color="primary"
+                      ></v-progress-circular>
+                      <v-btn
+                        icon
+                        color="primary"
+                        dark
+                        class="m-2"
+                        v-bind="attrs"
+                        v-on="on"
+                      >
+                        <v-icon>mdi-plus</v-icon>
+                      </v-btn>
+                    </template>
+                    <v-card>
+                      <v-card-title>
+                        <span class="text-h5">{{ formTitle }}</span>
+                      </v-card-title>
 
-              <v-card-text>
-                <v-container>
-                  <v-row>
-                    <v-col cols="12" sm="6" md="4">
-                      <v-text-field
-                        v-model="editedItem.label"
-                        label="Todo text"
-                      ></v-text-field>
-                    </v-col>
-                  </v-row>
-                </v-container>
-              </v-card-text>
+                      <v-card-text>
+                        <v-container>
+                          <v-row>
+                            <v-col cols="12" sm="6" md="4">
+                              <v-text-field
+                                v-model="editedItem.label"
+                                label="Todo text"
+                              ></v-text-field>
+                            </v-col>
+                          </v-row>
+                        </v-container>
+                      </v-card-text>
 
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="close">
-                  Cancel
-                </v-btn>
-                <v-btn color="blue darken-1" text @click="save"> Save </v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-          <v-dialog v-model="dialogDelete" max-width="500px">
-            <v-card>
-              <v-card-title class="text-h5"
-                >Are you sure you want to delete this item?</v-card-title
-              >
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="closeDelete"
-                  >Cancel</v-btn
-                >
-                <v-btn color="blue darken-1" text @click="deleteItemConfirm"
-                  >OK</v-btn
-                >
-                <v-spacer></v-spacer>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-        </v-toolbar>
-      </template>
-      <!-- eslint-disable-next-line vue/valid-v-slot -->
-      <template v-slot:item.actions="{ item }">
-        <v-icon small class="mr-2" @click="editItem(item)"> mdi-pencil </v-icon>
-        <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
-      </template>
-      <template v-slot:no-data>
-        <v-btn color="primary" @click="initialize"> Reset </v-btn>
-      </template>
-    </v-data-table>
+                      <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="blue darken-1" text @click="close">
+                          Cancel
+                        </v-btn>
+                        <v-btn color="blue darken-1" text @click="save">
+                          Save
+                        </v-btn>
+                      </v-card-actions>
+                    </v-card>
+                  </v-dialog>
+                  <v-dialog v-model="dialogDelete" max-width="500px">
+                    <v-card>
+                      <v-card-title class="text-h5"
+                        >Are you sure you want to delete this
+                        item?</v-card-title
+                      >
+                      <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="blue darken-1" text @click="closeDelete"
+                          >Cancel</v-btn
+                        >
+                        <v-btn
+                          color="blue darken-1"
+                          text
+                          @click="deleteItemConfirm"
+                          >OK</v-btn
+                        >
+                        <v-spacer></v-spacer>
+                      </v-card-actions>
+                    </v-card>
+                  </v-dialog>
+                </v-toolbar>
+              </template>
+              <!-- eslint-disable-next-line vue/valid-v-slot -->
+              <template v-slot:item.actions="{ item }">
+                <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
+              </template>
+              <template v-slot:no-data> No todos found </template>
+            </v-data-table>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
   </v-app>
 </template>
 <script lang="ts">
@@ -132,7 +183,7 @@ export interface TodoItem {
   id: string;
 }
 
-const TODOS_NAMESPACE = "todos";
+const TODOS_NAMESPACE = "_todos";
 const TODOS_PATH = "items";
 
 @Component({
@@ -156,7 +207,7 @@ export default class App extends Vue {
   loginDialog = false;
   addDialog = false;
   show1 = false;
-
+  isLoggedIn = false;
   dialogDelete = false;
   credentials = {
     username: "",
@@ -183,6 +234,8 @@ export default class App extends Vue {
     label: "",
     id: "",
   };
+  loginProgress = false;
+  addProgress = false;
   fdp: FdpStorage;
   wallet: any;
   podCounter: number;
@@ -191,16 +244,30 @@ export default class App extends Vue {
   created() {
     this.initialize();
   }
-  initialize() {
-    // this.todos = [
-    //   {
-    //     key: "1",
-    //     label: "default todo item",
-    //     id: "1",
-    //   },
-    // ];
+  async initialize() {
+    this.todos = [];
+    const rpcUrl = `https://goerli.infura.io/v3/92ed13edfad140409ac24457a9c4e22d`;
 
-    this.fdp = new FdpStorage("http://localhost:1633", "http://localhost:1635");
+    const publicResolver = `0x200C9d891F5b480D6210a252539c473e3Ae4771a`;
+    const ensRegistry = `0xE687f17858382C6FCbAe02b31B0aAB607D396059`;
+    const fdsRegistrar = `0x3adfB0D6B9662c9F711c2Ab18Cf5D7B0cc369C6B`;
+
+    this.fdp = new FdpStorage(
+      "http://localhost:1633",
+      "http://localhost:1635",
+      {
+        ensOptions: {
+          performChecks: true,
+          rpcUrl,
+          contractAddresses: {
+            ensRegistry,
+            publicResolver,
+            fdsRegistrar,
+          },
+        },
+        ensDomain: "fds",
+      }
+    );
   }
 
   async loadItems() {
@@ -209,14 +276,21 @@ export default class App extends Vue {
       `/${TODOS_PATH}`
     );
 
-    for (const i in items) {
-      const data = await this.fdp.file.downloadData(
-        TODOS_NAMESPACE,
-        `/${TODOS_PATH}/${i}`
-      );
-      const obj = JSON.parse(data.text());
-      this.todos.push(obj);
+    for (const i in items.content) {
+      if (!this.todos.find((t) => t.id === i.split(`.`)[1])) {
+        const data = await this.fdp.file.downloadData(
+          TODOS_NAMESPACE,
+          `/${TODOS_PATH}/${(i as any).name}`
+        );
+        // eslint-disable-next-line no-debugger
+        debugger;
+        const payload = new TextDecoder().decode(data.buffer);
+        const obj = JSON.parse(payload);
+        this.todos.push(obj);
+      }
     }
+    // eslint-disable-next-line no-debugger
+    debugger;
   }
 
   editItem(item: TodoItem) {
@@ -226,10 +300,15 @@ export default class App extends Vue {
   }
 
   async deleteItem(item: TodoItem) {
-    await this.fdp.file.delete(TODOS_NAMESPACE, `/${TODOS_PATH}/${item.id}`);
+    this.addProgress = true;
+    await this.fdp.file.delete(
+      TODOS_NAMESPACE,
+      `/${TODOS_PATH}/${item.id}.json`
+    );
     this.editedIndex = this.todos.indexOf(item);
     this.editedItem = Object.assign({}, item);
     this.dialogDelete = true;
+    this.addProgress = false;
   }
 
   deleteItemConfirm() {
@@ -254,22 +333,28 @@ export default class App extends Vue {
   }
 
   async save() {
+    this.addProgress = true;
     if (this.editedIndex > -1) {
       Object.assign(this.todos[this.editedIndex], this.editedItem);
     } else {
       this.todos.push(this.editedItem);
     }
     const id = uuidv4();
+    this.close();
+
     await this.fdp.file.uploadData(
       TODOS_NAMESPACE,
-      `/${TODOS_PATH}/${id}`,
-      JSON.stringify({ todo: this.editedItem.label, id })
+      `/${TODOS_PATH}/${id}.json`,
+      new TextEncoder().encode(
+        JSON.stringify({ todo: this.editedItem.label, id })
+      )
     );
-    this.close();
+    this.addProgress = false;
   }
 
   async login() {
     try {
+      this.loginProgress = true;
       const res = await this.fdp.account.login(
         this.credentials.username,
         this.credentials.password
@@ -279,25 +364,23 @@ export default class App extends Vue {
       // check if there is any pod, else create a new one
 
       let pods = await this.fdp.personalStorage.list();
-
-      if (pods.length > 0) {
-        // set counter somewhere
-        this.podCounter = pods.length;
-        this.todoPod = pods[0];
-        await this.loadItems();
-      } else {
-        const todoPod = await this.fdp.personalStorage.create(TODOS_NAMESPACE);
-        const res = await this.fdp.directory.create(
-          TODOS_NAMESPACE,
-          TODOS_PATH
-        );
-        pods = await this.fdp.personalStorage.list();
-        this.podCounter = pods.length;
-        this.todoPod = todoPod;
+      if (!pods.find((i) => i.name === TODOS_NAMESPACE)) {
+        await this.fdp.personalStorage.create(TODOS_NAMESPACE);
       }
+
+      try {
+        await this.fdp.directory.read(TODOS_NAMESPACE, `/${TODOS_PATH}`);
+      } catch (e) {
+        await this.fdp.directory.create(TODOS_NAMESPACE, `/${TODOS_PATH}`);
+      }
+
+      await this.loadItems();
     } catch (e) {
       alert(e.message);
     }
+    this.loginProgress = false;
+    this.loginDialog = false;
+    this.isLoggedIn = true;
   }
 }
 </script>
