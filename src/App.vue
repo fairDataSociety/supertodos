@@ -276,21 +276,25 @@ export default class App extends Vue {
       `/${TODOS_PATH}`
     );
 
-    for (const i in items.content) {
-      if (!this.todos.find((t) => t.id === i.split(`.`)[1])) {
-        const data = await this.fdp.file.downloadData(
-          TODOS_NAMESPACE,
-          `/${TODOS_PATH}/${(i as any).name}`
-        );
-        // eslint-disable-next-line no-debugger
-        debugger;
-        const payload = new TextDecoder().decode(data.buffer);
-        const obj = JSON.parse(payload);
-        this.todos.push(obj);
+    items.content.forEach(async (i) => {
+      if (!this.todos.find((t) => t.id === i.name.split(`.`)[1])) {
+        try {
+          const data = await this.fdp.file.downloadData(
+            TODOS_NAMESPACE,
+            `/${TODOS_PATH}/${(i as any).name}`
+          );
+          const payload = new TextDecoder().decode(data.buffer);
+          const _obj = JSON.parse(payload);
+          const obj = {
+            label: _obj.todo,
+            id: _obj.id,
+          };
+          this.todos.push(obj);
+        } catch (e) {
+          console.log("error", e);
+        }
       }
-    }
-    // eslint-disable-next-line no-debugger
-    debugger;
+    });
   }
 
   editItem(item: TodoItem) {
