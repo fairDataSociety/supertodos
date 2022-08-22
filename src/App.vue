@@ -246,28 +246,8 @@ export default class App extends Vue {
   }
   async initialize() {
     this.todos = [];
-    const rpcUrl = `https://goerli.infura.io/v3/92ed13edfad140409ac24457a9c4e22d`;
 
-    const publicResolver = `0x200C9d891F5b480D6210a252539c473e3Ae4771a`;
-    const ensRegistry = `0xE687f17858382C6FCbAe02b31B0aAB607D396059`;
-    const fdsRegistrar = `0x3adfB0D6B9662c9F711c2Ab18Cf5D7B0cc369C6B`;
-
-    this.fdp = new FdpStorage(
-      "http://localhost:1633",
-      "http://localhost:1635",
-      {
-        ensOptions: {
-          performChecks: true,
-          rpcUrl,
-          contractAddresses: {
-            ensRegistry,
-            publicResolver,
-            fdsRegistrar,
-          },
-        },
-        ensDomain: "fds",
-      }
-    );
+    this.fdp = new FdpStorage("http://localhost:1633", "http://localhost:1635");
   }
 
   async loadItems() {
